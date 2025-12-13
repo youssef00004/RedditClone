@@ -2,6 +2,7 @@ import User from "../models/user.js";
 import Post from "../models/post.js";
 import Comment from "../models/comment.js";
 import bcrypt from "bcryptjs";
+import { createNotification } from "./notificationController.js";
 
 export const getUserProfile = async (req, res) => {
   try {
@@ -38,6 +39,7 @@ export const getUserPosts = async (req, res) => {
     const posts = await Post.find({ author: req.params.id })
       .populate("author", "username")
       .populate("community", "name")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.json(posts);
@@ -54,10 +56,15 @@ export const getUserComments = async (req, res) => {
       .populate("post", "title")
       .populate({
         path: "post",
-        populate: {
-          path: "community",
-          select: "name",
-        },
+        populate: [
+          {
+            path: "community",
+            select: "name",
+          },
+          {
+            path: "comments",
+          },
+        ],
       })
       .sort({ createdAt: -1 });
 
@@ -73,6 +80,7 @@ export const getUserUpvotedPosts = async (req, res) => {
     const posts = await Post.find({ upvotes: req.params.id })
       .populate("author", "username")
       .populate("community", "name")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.json(posts);
@@ -87,6 +95,7 @@ export const getUserDownvotedPosts = async (req, res) => {
     const posts = await Post.find({ downvotes: req.params.id })
       .populate("author", "username")
       .populate("community", "name")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.json(posts);
@@ -103,10 +112,15 @@ export const getUserUpvotedComments = async (req, res) => {
       .populate("post", "title")
       .populate({
         path: "post",
-        populate: {
-          path: "community",
-          select: "name",
-        },
+        populate: [
+          {
+            path: "community",
+            select: "name",
+          },
+          {
+            path: "comments",
+          },
+        ],
       })
       .sort({ createdAt: -1 });
 
@@ -124,10 +138,15 @@ export const getUserDownvotedComments = async (req, res) => {
       .populate("post", "title")
       .populate({
         path: "post",
-        populate: {
-          path: "community",
-          select: "name",
-        },
+        populate: [
+          {
+            path: "community",
+            select: "name",
+          },
+          {
+            path: "comments",
+          },
+        ],
       })
       .sort({ createdAt: -1 });
 
@@ -145,6 +164,7 @@ export const getUserSavedPosts = async (req, res) => {
       populate: [
         { path: "author", select: "username" },
         { path: "community", select: "name" },
+        { path: "comments" },
       ],
     });
 
@@ -231,6 +251,14 @@ export const followUser = async (req, res) => {
     userToFollow.followers.push(req.user.id);
     await userToFollow.save();
 
+    // Create notification
+    await createNotification(
+      req.params.id,
+      req.user.id,
+      "follow",
+      `u/${currentUser.username} started following you`
+    );
+
     res.json({
       message: "Successfully followed user",
       following: currentUser.following,
@@ -277,23 +305,112 @@ export const updateUserProfile = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    const { username, bio, avatar, password } = req.body;
+    const {
+      username,
+      email,
+      bio,
+      avatar,
+      currentPassword,
+      newPassword,
+    } = req.body;
 
-    const updateData = { username, bio, avatar };
+    // Find the user with password for verification
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    // If password provided, hash it again
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
+    const updateData = {};
+
+    // Update username
+    if (username && username !== user.username) {
+      // Check if username is already taken
+      const existingUser = await User.findOne({ username });
+      if (existingUser && existingUser._id.toString() !== req.params.id) {
+        return res.status(400).json({ message: "Username already taken" });
+      }
+      updateData.username = username;
+    }
+
+    // Update email
+    if (email && email !== user.email) {
+      // Prevent email update for Google users
+      if (user.googleId) {
+        return res.status(403).json({
+          message: "Cannot update email for Google-authenticated accounts",
+        });
+      }
+
+      // Verify current password for email change
+      if (!currentPassword) {
+        return res
+          .status(400)
+          .json({ message: "Current password required to update email" });
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        currentPassword,
+        user.password
+      );
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+
+      // Check if email is already taken
+      const existingUser = await User.findOne({ email });
+      if (existingUser && existingUser._id.toString() !== req.params.id) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+
+      updateData.email = email;
+    }
+
+    // Update password
+    if (newPassword) {
+      // Prevent password update for Google users
+      if (user.googleId) {
+        return res.status(403).json({
+          message: "Cannot update password for Google-authenticated accounts",
+        });
+      }
+
+      // Verify current password
+      if (!currentPassword) {
+        return res
+          .status(400)
+          .json({ message: "Current password required to update password" });
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        currentPassword,
+        user.password
+      );
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
       updateData.password = hashedPassword;
     }
 
+    // Update bio and avatar if provided
+    if (bio !== undefined) updateData.bio = bio;
+    if (avatar !== undefined) updateData.avatar = avatar;
+
+    // Update user
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true }
     ).select("-password");
+
     res.json(updatedUser);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({ message: `${field} already exists` });
+    }
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };

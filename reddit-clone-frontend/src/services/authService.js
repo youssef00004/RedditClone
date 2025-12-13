@@ -5,8 +5,8 @@ const authService = {
   login: async (identifier, password) => {
     try {
       const response = await api.post("/auth/login", { identifier, password });
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
+      // Token is now stored in httpOnly cookie, only save user data
+      if (response.data.user) {
         localStorage.setItem("user", JSON.stringify(response.data.user));
       }
       return response.data;
@@ -34,8 +34,8 @@ const authService = {
   googleLogin: async (credential) => {
     try {
       const response = await api.post("/auth/google", { credential });
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
+      // Token is now stored in httpOnly cookie, only save user data
+      if (response.data.user) {
         localStorage.setItem("user", JSON.stringify(response.data.user));
       }
       return response.data;
@@ -45,9 +45,15 @@ const authService = {
   },
 
   // Logout
-  logout: () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  logout: async () => {
+    try {
+      await api.post("/auth/logout");
+      localStorage.removeItem("user");
+    } catch (error) {
+      // Clear user data even if API call fails
+      localStorage.removeItem("user");
+      throw error.response?.data?.message || "Logout failed";
+    }
   },
 
   // Get current user
@@ -58,7 +64,7 @@ const authService = {
 
   // Check if user is authenticated
   isAuthenticated: () => {
-    return !!localStorage.getItem("token");
+    return !!localStorage.getItem("user");
   },
 };
 

@@ -51,7 +51,7 @@ const postService = {
     }
   },
 
-  // Get feed posts
+  // Get feed posts (joined communities only)
   getFeedPosts: async () => {
     try {
       const response = await api.get("/posts/feed");
@@ -61,7 +61,27 @@ const postService = {
     }
   },
 
-  // Get community posts - NEW METHOD
+  // Get all posts from all communities
+  getAllPosts: async () => {
+    try {
+      const response = await api.get("/posts/all");
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || "Failed to fetch all posts";
+    }
+  },
+
+  // Get posts from followed users and joined communities
+  getFollowingFeed: async () => {
+    try {
+      const response = await api.get("/posts/following");
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || "Failed to fetch following feed";
+    }
+  },
+
+  // Get community posts
   getCommunityPosts: async (communityId) => {
     try {
       const response = await api.get(`/posts/community/${communityId}`);

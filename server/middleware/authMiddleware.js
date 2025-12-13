@@ -2,15 +2,22 @@ import jwt from "jsonwebtoken";
 
 export const protect = (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    // Get token from httpOnly cookie
+    let token = req.cookies.token;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    // Fallback to Authorization header for backward compatibility
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.split(" ")[1];
+      }
+    }
+
+    if (!token) {
       return res
         .status(401)
         .json({ message: "No token, authorization denied" });
     }
-
-    const token = authHeader.split(" ")[1];
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // { id: ... }

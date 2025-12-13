@@ -10,19 +10,13 @@ import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Create new community
+// Public routes - anyone can view communities
+router.get("/", getAllCommunities);
+router.get("/:id", getCommunityDetails);
+
+// Protected routes - require authentication
 router.post("/", protect, createCommunity);
-
-// Join community
 router.post("/:id/join", protect, joinCommunity);
-
-// Leave community
 router.post("/:id/leave", protect, leaveCommunity);
-
-// View a single community
-router.get("/:id", protect, getCommunityDetails);
-
-// View all communities (for search or browsing)
-router.get("/", protect, getAllCommunities);
 
 export default router;

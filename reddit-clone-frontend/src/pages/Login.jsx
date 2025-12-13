@@ -97,15 +97,8 @@ export default function Login() {
           </h1>
 
           <p className="text-gray-400 text-sm text-center mb-8">
-            By continuing, you agree to our{" "}
-            <a href="#" className="text-blue-500 hover:underline">
-              User Agreement
-            </a>{" "}
-            and acknowledge that you understand the{" "}
-            <a href="#" className="text-blue-500 hover:underline">
-              Privacy Policy
-            </a>
-            .
+            By continuing, you agree to our User Agreement and acknowledge that
+            you understand the Privacy Policy .
           </p>
 
           {/* Error Message */}
@@ -163,12 +156,6 @@ export default function Login() {
                 onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
                 className="w-full bg-zinc-800 text-white placeholder-gray-500 py-3 px-4 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               />
-            </div>
-
-            <div className="text-left">
-              <a href="#" className="text-blue-500 text-sm hover:underline">
-                Forgot password?
-              </a>
             </div>
 
             <div className="text-left text-sm">

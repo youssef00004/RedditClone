@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import PostCard from "../components/PostCard";
-import RightSidebar from "../components/RightSidebar";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
 import CreateCommunityFlow from "./CreateCommunityFlow";
 import postService from "../services/postService";
 import { useAuth } from "../context/AuthContext";
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +20,9 @@ export default function Home() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchPosts();
+    } else {
+      // Redirect to /all if not authenticated
+      navigate("/all");
     }
   }, [isAuthenticated]);
 
@@ -26,7 +30,8 @@ export default function Home() {
     try {
       setLoading(true);
       setError("");
-      const data = await postService.getFeedPosts();
+      // Use following feed instead of regular feed
+      const data = await postService.getFollowingFeed();
       setPosts(data);
     } catch (err) {
       console.error("Error fetching posts:", err);
@@ -53,7 +58,26 @@ export default function Home() {
 
         {/* Content Area */}
         <div className="flex-1 flex justify-center">
-          <main className="w-full max-w-3xl p-4">
+          <main className="w-full max-w-3xl p-2 sm:p-4">
+            {/* Feed Header */}
+            <div className="mb-3 sm:mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+                  <h1 className="text-xl sm:text-2xl font-bold">Your Feed</h1>
+                </div>
+                <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-1">
+                  Posts from communities you joined and users you follow
+                </p>
+              </div>
+              <button
+                onClick={() => navigate("/all")}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 dark:bg-zinc-800 hover:bg-gray-300 dark:hover:bg-zinc-700 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
+              >
+                View All Posts
+              </button>
+            </div>
+
             {/* Loading State */}
             {loading && (
               <div className="flex items-center justify-center py-16">
@@ -77,30 +101,30 @@ export default function Home() {
 
             {/* Empty State */}
             {!loading && !error && posts.length === 0 && (
-              <div className="bg-gray-100 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-800 rounded-lg p-12 text-center">
-                <div className="w-16 h-16 bg-gray-200 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-8 h-8 text-gray-400 dark:text-gray-500"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <line x1="9" y1="9" x2="15" y2="9" />
-                    <line x1="9" y1="15" x2="15" y2="15" />
-                  </svg>
+              <div className="bg-gray-100 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-800 rounded-lg p-6 sm:p-12 text-center">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-200 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                  <Users className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 dark:text-gray-500" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  Join some communities to see posts in your feed
+                <h3 className="text-base sm:text-lg font-semibold mb-2">
+                  Your feed is empty
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base mb-3 sm:mb-4">
+                  Join communities or follow users to see their posts here
                 </p>
-                <button
-                  onClick={() => setIsPopupOpen(true)}
-                  className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full font-medium"
-                >
-                  Create a Community
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
+                  <button
+                    onClick={() => navigate("/communities")}
+                    className="px-4 sm:px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full font-medium text-sm sm:text-base"
+                  >
+                    Browse Communities
+                  </button>
+                  <button
+                    onClick={() => navigate("/all")}
+                    className="px-4 sm:px-6 py-2 bg-gray-300 dark:bg-zinc-700 hover:bg-gray-400 dark:hover:bg-zinc-600 text-gray-900 dark:text-white rounded-full font-medium text-sm sm:text-base"
+                  >
+                    View All Posts
+                  </button>
+                </div>
               </div>
             )}
 
@@ -117,8 +141,8 @@ export default function Home() {
 
             {/* Load More Button (optional) */}
             {!loading && !error && posts.length > 0 && (
-              <div className="flex justify-center mt-6">
-                <button className="px-6 py-3 bg-gray-200 dark:bg-zinc-800 hover:bg-gray-300 dark:hover:bg-zinc-700 text-gray-900 dark:text-white rounded-full font-medium transition-colors">
+              <div className="flex justify-center mt-4 sm:mt-6">
+                <button className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-gray-200 dark:bg-zinc-800 hover:bg-gray-300 dark:hover:bg-zinc-700 text-gray-900 dark:text-white rounded-full font-medium transition-colors">
                   Load More
                 </button>
               </div>

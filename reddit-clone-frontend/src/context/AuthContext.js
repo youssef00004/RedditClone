@@ -45,9 +45,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    authService.logout();
-    setUser(null);
+  const logout = async () => {
+    try {
+      await authService.logout();
+      setUser(null);
+    } catch (error) {
+      // Still clear user state even if API call fails
+      setUser(null);
+      console.error("Logout error:", error);
+    }
   };
 
   const value = {

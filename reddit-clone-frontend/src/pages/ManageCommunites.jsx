@@ -13,6 +13,7 @@ import Sidebar from "../components/Sidebar";
 import communityService from "../services/communityService";
 import { useAuth } from "../context/AuthContext";
 import CreateCommunityFlow from "./CreateCommunityFlow";
+import ConfirmModal from "../components/ConfirmModal";
 
 const ManageCommunities = () => {
   const navigate = useNavigate();
@@ -25,6 +26,9 @@ const ManageCommunities = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [communityToLeave, setCommunityToLeave] = useState(null);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -81,20 +85,29 @@ const ManageCommunities = () => {
     saveFavorites(newFavorites);
   };
 
-  const handleLeave = async (communityId, communityName) => {
-    if (!window.confirm(`Are you sure you want to leave r/${communityName}?`))
-      return;
+  const handleLeave = (communityId, communityName) => {
+    setCommunityToLeave({ id: communityId, name: communityName });
+    setIsModalOpen(true);
+  };
 
+  const confirmLeave = async () => {
+    if (!communityToLeave) return;
+
+    setIsLeaving(true);
     try {
-      await communityService.leaveCommunity(communityId);
+      await communityService.leaveCommunity(communityToLeave.id);
       // Remove from local state
-      setCommunities(communities.filter((c) => c._id !== communityId));
+      setCommunities(communities.filter((c) => c._id !== communityToLeave.id));
       // Remove from favorites if it's there
-      if (favorites.includes(communityId)) {
-        saveFavorites(favorites.filter((id) => id !== communityId));
+      if (favorites.includes(communityToLeave.id)) {
+        saveFavorites(favorites.filter((id) => id !== communityToLeave.id));
       }
+      setIsModalOpen(false);
+      setCommunityToLeave(null);
     } catch (err) {
-      alert(err.toString() || "Failed to leave community");
+      setError(err.toString() || "Failed to leave community");
+    } finally {
+      setIsLeaving(false);
     }
   };
 
@@ -122,7 +135,7 @@ const ManageCommunities = () => {
           <main className="max-w-[1200px] mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-12 gap-8">
             {/* Left Column (Content) */}
             <div className="md:col-span-8">
-              <h1 className="text-3xl font-bold mb-3 text-gray-300">
+              <h1 className="text-3xl font-bold mb-3 text-black dark:text-white">
                 Manage communities
               </h1>
 
@@ -137,7 +150,7 @@ const ManageCommunities = () => {
                   placeholder="Filter your communities"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-gray-100 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-600 rounded-lg py-2 pl-10 pr-4 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  className="w-full bg-white dark:bg-black border border-gray-300 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-600 rounded-lg py-2 pl-10 pr-4 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 />
               </div>
 
@@ -212,7 +225,7 @@ const ManageCommunities = () => {
                   onClick={() => setActiveTab("All Communities")}
                   className={`w-full text-left px-3 py-2 rounded transition ${
                     activeTab === "All Communities"
-                      ? "bg-gray-700 text-white"
+                      ? "bg-gray-400 text-white dark:bg-zinc-600"
                       : "hover:bg-gray-200 dark:hover:bg-zinc-800"
                   }`}
                 >
@@ -222,7 +235,7 @@ const ManageCommunities = () => {
                   onClick={() => setActiveTab("Favorites")}
                   className={`w-full text-left px-3 py-2 rounded transition ${
                     activeTab === "Favorites"
-                      ? "bg-gray-600 text-white"
+                      ? "bg-gray-400 text-white dark:bg-zinc-600"
                       : "hover:bg-gray-200 dark:hover:bg-zinc-800"
                   }`}
                 >
@@ -258,6 +271,21 @@ const ManageCommunities = () => {
       {isPopupOpen && (
         <CreateCommunityFlow onClose={() => setIsPopupOpen(false)} />
       )}
+
+      {/* Leave Community Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setCommunityToLeave(null);
+        }}
+        onConfirm={confirmLeave}
+        title="Leave community"
+        message={`Are you sure you want to leave r/${communityToLeave?.name}? You can always rejoin later.`}
+        confirmText="Leave"
+        cancelText="Cancel"
+        isLoading={isLeaving}
+      />
     </div>
   );
 };
@@ -270,15 +298,6 @@ const CommunityItem = ({
   onLeave,
   onNavigate,
 }) => {
-  const [isLeaving, setIsLeaving] = useState(false);
-
-  const handleLeave = async (e) => {
-    e.stopPropagation();
-    setIsLeaving(true);
-    await onLeave();
-    setIsLeaving(false);
-  };
-
   return (
     <div
       onClick={onNavigate}
@@ -287,7 +306,7 @@ const CommunityItem = ({
       <div className="flex items-center gap-3">
         {/* Icon */}
         <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center relative">
-          <span className="text-xl font-bold text-white">
+          <span className="text-lg font-bold text-white">
             {community.name.charAt(0).toUpperCase()}
           </span>
         </div>
@@ -319,18 +338,14 @@ const CommunityItem = ({
           <Star size={20} fill={isFavorite ? "currentColor" : "none"} />
         </button>
         <button
-          onClick={handleLeave}
-          disabled={isLeaving}
-          className="flex items-center gap-1 px-4 py-1.5 rounded-full text-sm font-bold transition-colors border border-gray-300 dark:border-zinc-600 hover:border-red-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 disabled:opacity-50"
+          onClick={(e) => {
+            e.stopPropagation();
+            onLeave();
+          }}
+          className="flex items-center gap-1 px-4 py-1.5 rounded-full text-sm font-bold transition-colors border border-gray-300 dark:border-zinc-600 hover:border-red-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
         >
-          {isLeaving ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <>
-              <UserMinus size={16} />
-              <span>Leave</span>
-            </>
-          )}
+          <UserMinus size={16} />
+          <span>Leave</span>
         </button>
       </div>
     </div>

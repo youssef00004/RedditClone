@@ -8,10 +8,12 @@ import PostCard from "../components/PostCard";
 import UserCommentCard from "../components/UserCommentCard";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
+import { showError } from "../utils/toast";
+import { formatDate } from "../utils/dateUtils";
 
 export default function UserProfile() {
   const { username } = useParams();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("overview");
@@ -57,11 +59,13 @@ export default function UserProfile() {
       const userData = await userService.getUserByUsername(username);
       setUser(userData);
 
-      // Check if current user is following this user
-      const currentUserData = await userService.getUserProfile(currentUser?.id);
-      setIsFollowing(
-        currentUserData.following?.some((f) => f._id === userData._id) || false
-      );
+      // Check if current user is following this user (only if authenticated)
+      if (currentUser?.id) {
+        const currentUserData = await userService.getUserProfile(currentUser.id);
+        setIsFollowing(
+          currentUserData.following?.some((f) => f._id === userData._id) || false
+        );
+      }
 
       // Fetch user's posts
       const postsData = await userService.getUserPosts(userData._id);
@@ -133,15 +137,10 @@ export default function UserProfile() {
       }
     } catch (err) {
       console.error("Follow error:", err);
-      alert(err || "Failed to follow/unfollow user");
+      showError(err || "Failed to follow/unfollow user");
     } finally {
       setIsFollowLoading(false);
     }
-  };
-
-  const formatDate = (date) => {
-    const options = { year: "numeric", month: "long", day: "numeric" };
-    return new Date(date).toLocaleDateString("en-US", options);
   };
 
   const calculateKarma = () => {
@@ -176,9 +175,9 @@ export default function UserProfile() {
         return (
           <div>
             {posts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <h2 className="text-xl font-semibold mb-2">No posts yet</h2>
-                <p className="text-gray-400 text-center max-w-md mb-6">
+              <div className="flex flex-col items-center justify-center py-12 sm:py-20">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">No posts yet</h2>
+                <p className="text-sm sm:text-base text-gray-400 text-center max-w-md mb-6 px-4">
                   {isOwnProfile
                     ? "You haven't posted anything yet."
                     : `${user?.username} hasn't posted anything yet.`}
@@ -201,9 +200,9 @@ export default function UserProfile() {
         return (
           <div>
             {comments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <h2 className="text-xl font-semibold mb-2">No comments yet</h2>
-                <p className="text-gray-400 text-center max-w-md mb-6">
+              <div className="flex flex-col items-center justify-center py-12 sm:py-20">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">No comments yet</h2>
+                <p className="text-sm sm:text-base text-gray-400 text-center max-w-md mb-6 px-4">
                   {isOwnProfile
                     ? "You haven't commented on anything yet."
                     : `${user?.username} hasn't commented on anything yet.`}
@@ -220,10 +219,10 @@ export default function UserProfile() {
       case "saved":
         if (!isOwnProfile) {
           return (
-            <div className="flex flex-col items-center justify-center py-20">
-              <h2 className="text-xl font-semibold mb-2">Private</h2>
-              <p className="text-gray-400 text-center max-w-md">
-                Only you can see your saved posts.
+            <div className="flex flex-col items-center justify-center py-12 sm:py-20">
+              <h2 className="text-lg sm:text-xl font-semibold mb-2">Private</h2>
+              <p className="text-sm sm:text-base text-gray-400 text-center max-w-md px-4">
+                Only User can see his saved posts.
               </p>
             </div>
           );
@@ -231,9 +230,9 @@ export default function UserProfile() {
         return (
           <div>
             {savedPosts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <h2 className="text-xl font-semibold mb-2">No saved posts</h2>
-                <p className="text-gray-400 text-center max-w-md mb-6">
+              <div className="flex flex-col items-center justify-center py-12 sm:py-20">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">No saved posts</h2>
+                <p className="text-sm sm:text-base text-gray-400 text-center max-w-md mb-6 px-4">
                   Save posts to view them later.
                 </p>
               </div>
@@ -253,10 +252,10 @@ export default function UserProfile() {
       case "upvoted":
         if (!isOwnProfile) {
           return (
-            <div className="flex flex-col items-center justify-center py-20">
-              <h2 className="text-xl font-semibold mb-2">Private</h2>
-              <p className="text-gray-400 text-center max-w-md">
-                Only you can see your upvoted content.
+            <div className="flex flex-col items-center justify-center py-12 sm:py-20">
+              <h2 className="text-lg sm:text-xl font-semibold mb-2">Private</h2>
+              <p className="text-sm sm:text-base text-gray-400 text-center max-w-md px-4">
+                Only User can see his upvoted content.
               </p>
             </div>
           );
@@ -264,11 +263,11 @@ export default function UserProfile() {
         return (
           <div>
             {upvotedPosts.length === 0 && upvotedComments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <h2 className="text-xl font-semibold mb-2">
+              <div className="flex flex-col items-center justify-center py-12 sm:py-20">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">
                   No upvoted content
                 </h2>
-                <p className="text-gray-400 text-center max-w-md mb-6">
+                <p className="text-sm sm:text-base text-gray-400 text-center max-w-md mb-6 px-4">
                   Posts and comments you upvote will appear here.
                 </p>
               </div>
@@ -293,10 +292,10 @@ export default function UserProfile() {
       case "downvoted":
         if (!isOwnProfile) {
           return (
-            <div className="flex flex-col items-center justify-center py-20">
-              <h2 className="text-xl font-semibold mb-2">Private</h2>
-              <p className="text-gray-400 text-center max-w-md">
-                Only you can see your downvoted content.
+            <div className="flex flex-col items-center justify-center py-12 sm:py-20">
+              <h2 className="text-lg sm:text-xl font-semibold mb-2">Private</h2>
+              <p className="text-sm sm:text-base text-gray-400 text-center max-w-md px-4">
+                Only User can see his downvoted content.
               </p>
             </div>
           );
@@ -304,11 +303,11 @@ export default function UserProfile() {
         return (
           <div>
             {downvotedPosts.length === 0 && downvotedComments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <h2 className="text-xl font-semibold mb-2">
+              <div className="flex flex-col items-center justify-center py-12 sm:py-20">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">
                   No downvoted content
                 </h2>
-                <p className="text-gray-400 text-center max-w-md mb-6">
+                <p className="text-sm sm:text-base text-gray-400 text-center max-w-md mb-6 px-4">
                   Posts and comments you downvote will appear here.
                 </p>
               </div>
@@ -336,8 +335,8 @@ export default function UserProfile() {
           <div>
             {/* Recent Posts */}
             {posts.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-4">Recent Posts</h3>
+              <div className="mb-4 sm:mb-6">
+                <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Recent Posts</h3>
                 {posts.slice(0, 3).map((post) => (
                   <PostCard
                     key={post._id}
@@ -352,7 +351,7 @@ export default function UserProfile() {
             {/* Recent Comments */}
             {comments.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold mb-4">Recent Comments</h3>
+                <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Recent Comments</h3>
                 {comments.slice(0, 3).map((comment) => (
                   <UserCommentCard key={comment._id} comment={comment} />
                 ))}
@@ -361,9 +360,9 @@ export default function UserProfile() {
 
             {/* Empty State */}
             {posts.length === 0 && comments.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20">
-                <h2 className="text-xl font-semibold mb-2">No activity yet</h2>
-                <p className="text-gray-400 text-center max-w-md mb-6">
+              <div className="flex flex-col items-center justify-center py-12 sm:py-20">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">No activity yet</h2>
+                <p className="text-sm sm:text-base text-gray-400 text-center max-w-md mb-6 px-4">
                   {isOwnProfile
                     ? "Start posting and commenting to build your presence!"
                     : `${user?.username} hasn't been active yet.`}
@@ -380,7 +379,7 @@ export default function UserProfile() {
       <div className="min-h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-white">
         <Navbar />
         <div className="pt-14 flex items-center justify-center h-screen">
-          <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+          <Loader2 className="w-8 h-8 sm:w-12 sm:h-12 text-blue-500 animate-spin" />
         </div>
       </div>
     );
@@ -390,14 +389,14 @@ export default function UserProfile() {
     return (
       <div className="min-h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-white">
         <Navbar />
-        <div className="pt-14 flex items-center justify-center h-screen">
+        <div className="pt-14 flex items-center justify-center h-screen px-4">
           <div className="text-center">
-            <p className="text-red-500 text-xl mb-4">
+            <p className="text-red-500 text-base sm:text-xl mb-4">
               {error || "User not found"}
             </p>
             <button
               onClick={() => navigate("/")}
-              className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full"
+              className="px-4 sm:px-6 py-1.5 sm:py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-sm sm:text-base"
             >
               Go Home
             </button>
@@ -408,27 +407,27 @@ export default function UserProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-white transition-colors">
+    <div className="min-h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-white transition-colors overflow-x-hidden">
       <Navbar />
-      <div className="pt-14 flex">
+      <div className="pt-14 flex min-w-0 w-full">
         <Sidebar setIsPopupOpen={setIsPopupOpen} />
-        <div className="flex-1 flex justify-center ml-10">
+        <div className="flex-1 flex justify-center min-w-0 overflow-x-hidden">
           {/* Main Content */}
-          <main className="w-full max-w-3xl">
+          <main className="w-full max-w-3xl px-2 sm:px-4 min-w-0">
             {/* Profile Header */}
-            <div className="relative">
-              <div className="flex items-end justify-between mt-6">
-                <div className="flex items-end">
-                  <div className="w-14 h-14 bg-purple-400 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-2xl">
+            <div className="relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mt-4 sm:mt-6 gap-3 w-full">
+                <div className="flex items-end min-w-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-purple-400 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-xl sm:text-2xl">
                       {user.username?.charAt(0).toUpperCase() || "U"}
                     </span>
                   </div>
-                  <div className="ml-3 pb-1">
-                    <h1 className="text-2xl text-gray-900 dark:text-gray-100 font-bold">
+                  <div className="ml-2 sm:ml-3 pb-0.5 sm:pb-1 min-w-0 flex-1">
+                    <h1 className="text-xl sm:text-2xl text-gray-900 dark:text-gray-100 font-bold truncate">
                       {user.username}
                     </h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm truncate">
                       u/{user.username}
                     </p>
                   </div>
@@ -437,9 +436,9 @@ export default function UserProfile() {
                 {/* Follow Button (only for other users) */}
                 {!isOwnProfile && (
                   <button
-                    onClick={handleFollow}
+                    onClick={() => isAuthenticated ? handleFollow() : navigate("/login")}
                     disabled={isFollowLoading}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium transition ${
+                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-full font-medium transition ${
                       isFollowing
                         ? "bg-gray-200 dark:bg-zinc-800 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-zinc-700"
                         : "bg-blue-500 hover:bg-blue-600 text-white"
@@ -462,20 +461,20 @@ export default function UserProfile() {
 
               {/* Bio */}
               {user.bio && (
-                <div className="mt-4 text-gray-700 dark:text-gray-300">
+                <div className="mt-3 sm:mt-4 text-gray-700 dark:text-gray-300 text-sm sm:text-base break-words">
                   {user.bio}
                 </div>
               )}
 
               {/* Tabs */}
-              <div className="flex gap-0.5 mt-6 overflow-x-auto">
+              <div className="flex gap-1 sm:gap-0.5 mt-4 sm:mt-6 overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0 scrollbar-hide">
                 {tabs.map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab.toLowerCase())}
-                    className={`px-4 py-2 text-base font-semibold rounded-full transition-colors whitespace-nowrap ${
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-semibold rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
                       activeTab === tab.toLowerCase()
-                        ? "bg-gray-600 dark:bg-gray-600 text-white"
+                        ? "bg-gray-400 dark:bg-gray-600 text-white"
                         : "text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     }`}
                   >
@@ -486,24 +485,24 @@ export default function UserProfile() {
 
               {/* Content Filter */}
               {isOwnProfile && (
-                <div className="flex items-center justify-between py-4 border-b border-gray-300 dark:border-gray-800">
+                <div className="flex items-center justify-between py-3 sm:py-4 border-b border-gray-300 dark:border-gray-800">
                   <button
                     onClick={() => navigate("/create")}
-                    className="flex items-center space-x-1 border border-gray-900 dark:border-white rounded-full py-1.5 px-4 hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-150"
+                    className="flex items-center gap-1 sm:gap-1 border border-gray-900 dark:border-white rounded-full py-1.5 px-3 sm:px-4 text-sm sm:text-base hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-150"
                   >
-                    <Plus size={18} />
+                    <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span className="font-semibold">Create Post</span>
                   </button>
                 </div>
               )}
 
               {/* Content */}
-              <div className="mt-6">{renderContent()}</div>
+              <div className="mt-6 min-w-0 overflow-hidden">{renderContent()}</div>
             </div>
           </main>
 
-          {/* Right Sidebar */}
-          <aside className="w-80 bg-white dark:bg-black border-gray-300 dark:border-gray-800 mt-6 ml-3">
+          {/* Right Sidebar - Hidden on mobile/tablet, visible on large screens */}
+          <aside className="hidden lg:block w-80 bg-white dark:bg-black border-gray-300 dark:border-gray-800 mt-6 ml-3">
             {/* Blue Header */}
             <div className="relative w-full bg-[#0045AC] rounded-t-3xl overflow-hidden">
               <div className="h-32 relative">
@@ -518,13 +517,7 @@ export default function UserProfile() {
 
             {/* Stats */}
             <div className="ml-3 space-y-6 text-gray-900 dark:text-white">
-              <div className="text-sm mt-4">
-                <span className="text-gray-500 dark:text-gray-400">
-                  u/{user.username}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-left">
+              <div className="grid grid-cols-2 gap-3 text-left mt-4">
                 <div>
                   <div className="text-sm font-bold">
                     {user.followers?.length || 0}
@@ -551,8 +544,8 @@ export default function UserProfile() {
               </div>
 
               <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Calendar className="w-4 h-4" />
-                <span>Joined {formatDate(user.createdAt)}</span>
+                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="text-xs sm:text-sm">Joined {formatDate(user.createdAt)}</span>
               </div>
             </div>
 

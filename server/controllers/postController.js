@@ -1,5 +1,6 @@
 import Post from "../models/post.js";
 import Community from "../models/community.js";
+import User from "../models/user.js";
 import cloudinary from "../config/cloudinary.js";
 
 // Helper function to upload to Cloudinary
@@ -58,6 +59,7 @@ export const createPost = async (req, res) => {
     // Populate author and community details
     await newPost.populate("author", "username avatar");
     await newPost.populate("community", "name");
+    await newPost.populate("comments");
 
     res.status(201).json({
       message: "Post created successfully",
@@ -75,6 +77,7 @@ export const getCommunityPosts = async (req, res) => {
     const posts = await Post.find({ community: req.params.communityId })
       .populate("author", "username avatar")
       .populate("community", "name")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.json(posts);
@@ -83,7 +86,7 @@ export const getCommunityPosts = async (req, res) => {
   }
 };
 
-// Get posts for user's feed
+// Get posts for user's feed (joined communities only)
 export const getFeedPosts = async (req, res) => {
   try {
     const communities = await Community.find({ members: req.user.id }).select(
@@ -94,6 +97,7 @@ export const getFeedPosts = async (req, res) => {
     const posts = await Post.find({ community: { $in: communityIds } })
       .populate("author", "username avatar")
       .populate("community", "name")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.json(posts);
@@ -102,12 +106,74 @@ export const getFeedPosts = async (req, res) => {
   }
 };
 
+// Get ALL posts from all communities
+export const getAllPosts = async (req, res) => {
+  try {
+    const posts = await Post.find()
+      .populate("author", "username avatar")
+      .populate("community", "name")
+      .populate("comments")
+      .sort({ createdAt: -1 })
+      .limit(100); // Limit to prevent overwhelming responses
+
+    res.json(posts);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Get posts from followed users and joined communities
+export const getFollowingFeed = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Get communities user is a member of
+    const communities = await Community.find({ members: req.user.id }).select(
+      "_id"
+    );
+    const communityIds = communities.map((c) => c._id);
+
+    // If user has no following and no communities, return empty array
+    if ((!user.following || user.following.length === 0) && communityIds.length === 0) {
+      return res.json([]);
+    }
+
+    // Build query conditions
+    const queryConditions = [];
+    if (user.following && user.following.length > 0) {
+      queryConditions.push({ author: { $in: user.following } });
+    }
+    if (communityIds.length > 0) {
+      queryConditions.push({ community: { $in: communityIds } });
+    }
+
+    // Get posts from followed users OR joined communities
+    const posts = await Post.find({
+      $or: queryConditions,
+    })
+      .populate("author", "username avatar")
+      .populate("community", "name")
+      .populate("comments")
+      .sort({ createdAt: -1 });
+
+    res.json(posts);
+  } catch (error) {
+    console.error("Get following feed error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 // Get single post by ID
 export const getPostById = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id)
       .populate("author", "username avatar")
-      .populate("community", "name");
+      .populate("community", "name")
+      .populate("comments");
     if (!post) return res.status(404).json({ message: "Post not found" });
 
     res.json(post);

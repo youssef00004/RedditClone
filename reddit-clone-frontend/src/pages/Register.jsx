@@ -109,15 +109,8 @@ export default function Register() {
           </h1>
 
           <p className="text-gray-400 text-sm text-center mb-8">
-            By continuing, you agree to our{" "}
-            <a href="#" className="text-blue-500 hover:underline">
-              User Agreement
-            </a>{" "}
-            and acknowledge that you understand the{" "}
-            <a href="#" className="text-blue-500 hover:underline">
-              Privacy Policy
-            </a>
-            .
+            By continuing, you agree to our User Agreement and acknowledge that
+            you understand the Privacy Policy .
           </p>
 
           {/* Error Message */}
