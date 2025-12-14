@@ -5,6 +5,7 @@ const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
   headers: {
     "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true", // Bypass ngrok warning page
   },
   withCredentials: true, // Enable sending cookies with requests (httpOnly cookies)
   timeout: 30000, // 30 second timeout for all requests
