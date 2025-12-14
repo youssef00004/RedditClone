@@ -8,7 +8,17 @@ const onlineUsers = new Map();
 export const initializeSocket = (io) => {
   // Authentication middleware for socket
   io.use((socket, next) => {
-    const token = socket.handshake.auth.token;
+    // Try to get token from cookies first (httpOnly cookie)
+    let token = socket.handshake.headers.cookie
+      ?.split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
+
+    // Fallback to auth token (for backward compatibility)
+    if (!token) {
+      token = socket.handshake.auth.token;
+    }
+
     if (!token) {
       return next(new Error("Authentication error"));
     }

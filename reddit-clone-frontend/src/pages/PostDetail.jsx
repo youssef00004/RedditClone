@@ -74,7 +74,7 @@ export default function PostDetail() {
       <Navbar />
 
       <div className="pt-14 flex">
-        <Sidebar />
+        <Sidebar setIsPopupOpen={setIsPopupOpen} />
 
         <div className="flex-1 flex justify-center">
           {/* Main Content */}
@@ -98,6 +98,10 @@ export default function PostDetail() {
           </main>
         </div>
       </div>
+      {/* Create Community Popup */}
+      {isPopupOpen && (
+        <CreateCommunityFlow onClose={() => setIsPopupOpen(false)} />
+      )}
     </div>
   );
 }

@@ -34,11 +34,10 @@ export const ChatProvider = ({ children }) => {
   // Initialize socket connection
   useEffect(() => {
     if (isAuthenticated) {
-      const token = localStorage.getItem("token");
       const newSocket = io(
         process.env.REACT_APP_SOCKET_URL || "http://localhost:5000",
         {
-          auth: { token },
+          withCredentials: true, // Send httpOnly cookies with socket connection
           transports: ["websocket", "polling"],
         }
       );
