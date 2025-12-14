@@ -6,11 +6,12 @@ import CommentsSection from "../components/CommentComponents/CommentsSection";
 import PostCard from "../components/PostCard";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import postService from "../services/postService";
+import CreateCommunityFlow from "./CreateCommunityFlow";
 
 export default function PostDetail() {
   const navigate = useNavigate();
   const { postId } = useParams();
-
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
