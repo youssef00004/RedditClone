@@ -106,6 +106,8 @@ const ManageCommunities = () => {
       setCommunityToLeave(null);
     } catch (err) {
       setError(err.toString() || "Failed to leave community");
+      setIsModalOpen(false);
+      setCommunityToLeave(null);
     } finally {
       setIsLeaving(false);
     }

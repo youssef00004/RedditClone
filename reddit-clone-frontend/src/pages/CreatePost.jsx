@@ -11,7 +11,7 @@ import { useAuth } from "../context/AuthContext";
 export default function CreatePost() {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [activeTab, setActiveTab] = useState("text");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -34,19 +34,28 @@ export default function CreatePost() {
     }
   }, [isAuthenticated, navigate]);
 
-  // Fetch communities on mount
+  // Fetch communities on mount - only show joined communities
   useEffect(() => {
     const fetchCommunities = async () => {
       try {
         const data = await communityService.getAllCommunities();
-        setCommunities(data);
-        setFilteredCommunities(data);
+        // Filter to only show communities where the user is a member
+        const userId = user?._id || user?.id;
+        const joinedCommunities = data.filter((community) =>
+          community.members?.some(
+            (memberId) => String(memberId) === String(userId)
+          )
+        );
+        setCommunities(joinedCommunities);
+        setFilteredCommunities(joinedCommunities);
       } catch (err) {
         console.error("Error fetching communities:", err);
       }
     };
-    fetchCommunities();
-  }, []);
+    if (user) {
+      fetchCommunities();
+    }
+  }, [user]);
 
   // Filter communities based on search
   useEffect(() => {
@@ -168,7 +177,9 @@ export default function CreatePost() {
                   <span className="text-white text-xs font-bold">r/</span>
                 </div>
                 <span className="font-medium text-sm sm:text-base">
-                  Select a community
+                  {communities.length === 0
+                    ? "Join a community to post"
+                    : "Select a community"}
                 </span>
                 <ChevronDown className="w-4 h-4 ml-auto sm:ml-2" />
               </button>
@@ -196,11 +207,16 @@ export default function CreatePost() {
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
-                    placeholder="Select a community"
+                    placeholder={
+                      communities.length === 0
+                        ? "Join a community to post"
+                        : "Select a community"
+                    }
                     value={communitySearch}
                     onChange={(e) => setCommunitySearch(e.target.value)}
                     autoFocus
-                    className="w-full sm:w-8/12 md:w-6/12 bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 pl-12 pr-4 py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    disabled={communities.length === 0}
+                    className="w-full sm:w-8/12 md:w-6/12 bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 pl-12 pr-4 py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -234,6 +250,16 @@ export default function CreatePost() {
                     ))}
                   </div>
                 )}
+                {/* Show message when no communities found during search */}
+                {communities.length > 0 &&
+                  filteredCommunities.length === 0 &&
+                  communitySearch && (
+                    <div className="absolute top-full mt-2 w-full sm:w-8/12 md:w-6/12 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg shadow-2xl p-4 z-10">
+                      <p className="text-gray-500 dark:text-gray-400 text-center text-sm">
+                        No joined communities match your search
+                      </p>
+                    </div>
+                  )}
               </div>
             )}
 

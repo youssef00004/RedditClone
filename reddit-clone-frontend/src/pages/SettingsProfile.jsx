@@ -3,11 +3,13 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import authService from "../services/authService";
 import userService from "../services/userService";
+import CreateCommunityFlow from "./CreateCommunityFlow";
 
 const SettingsProfile = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
 
   // Form states
   const [usernameData, setUsernameData] = useState({
@@ -160,7 +162,7 @@ const SettingsProfile = () => {
       {/* Main Layout - starts below navbar */}
       <div className="pt-14 flex">
         {/* Sidebar */}
-        <Sidebar />
+        <Sidebar setIsPopupOpen={setIsPopupOpen} />
 
         {/* Main Content Area - takes remaining width */}
         <div className="flex-1 lg:ml-20">
@@ -408,6 +410,10 @@ const SettingsProfile = () => {
           </div>
         </div>
       </div>
+      {/* Create Community Popup */}
+      {isPopupOpen && (
+        <CreateCommunityFlow onClose={() => setIsPopupOpen(false)} />
+      )}
     </div>
   );
 };

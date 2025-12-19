@@ -11,6 +11,7 @@ import {
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import PostCard from "../components/PostCard";
+import ConfirmModal from "../components/ConfirmModal";
 import communityService from "../services/communityService";
 import postService from "../services/postService";
 import { useAuth } from "../context/AuthContext";
@@ -29,6 +30,7 @@ export default function CommunityDetail() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   useEffect(() => {
     fetchCommunity();
@@ -73,13 +75,15 @@ export default function CommunityDetail() {
     }
   };
 
-  const handleLeave = async () => {
-    if (!window.confirm("Are you sure you want to leave this community?"))
-      return;
+  const handleLeaveClick = () => {
+    setShowLeaveModal(true);
+  };
 
+  const handleLeaveConfirm = async () => {
     try {
       setActionLoading(true);
       await communityService.leaveCommunity(id);
+      setShowLeaveModal(false);
       await fetchCommunity();
     } catch (err) {
       showError(err.toString() || "Failed to leave community");
@@ -168,7 +172,7 @@ export default function CommunityDetail() {
                     </button>
                     {isMember ? (
                       <button
-                        onClick={handleLeave}
+                        onClick={handleLeaveClick}
                         disabled={actionLoading}
                         className="px-4 sm:px-6 py-1.5 sm:py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-3xl font-medium transition flex items-center justify-center gap-1.5 sm:gap-2 disabled:cursor-not-allowed text-sm sm:text-base flex-1 sm:flex-initial"
                       >
@@ -300,6 +304,19 @@ export default function CommunityDetail() {
       {isPopupOpen && (
         <CreateCommunityFlow onClose={() => setIsPopupOpen(false)} />
       )}
+
+      {/* Leave Community Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLeaveModal}
+        onClose={() => setShowLeaveModal(false)}
+        onConfirm={handleLeaveConfirm}
+        title="Leave Community"
+        message="Are you sure you want to leave this community?"
+        confirmText="Leave"
+        cancelText="Cancel"
+        isLoading={actionLoading}
+        loadingText="Leaving"
+      />
     </div>
   );
 }

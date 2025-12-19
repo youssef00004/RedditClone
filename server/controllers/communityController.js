@@ -56,14 +56,12 @@ export const leaveCommunity = async (req, res) => {
     if (!community)
       return res.status(404).json({ message: "Community not found" });
 
-    // Don't allow creator to leave
-    if (community.creator.toString() === req.user.id) {
-      return res.status(400).json({
-        message:
-          "Community creator cannot leave. Transfer ownership or delete the community instead.",
-      });
+    // Check if user is a member
+    if (!community.members.includes(req.user.id)) {
+      return res.status(400).json({ message: "Not a member of this community" });
     }
 
+    // Remove user from members (creators can leave too)
     community.members = community.members.filter(
       (memberId) => memberId.toString() !== req.user.id
     );
