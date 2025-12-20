@@ -72,8 +72,8 @@ export default function CreatePost() {
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setError("Image size should be less than 10MB");
+      if (file.size > 100 * 1024 * 1024) {
+        setError("Image size should be less than 100MB");
         return;
       }
       setSelectedImage(file);
@@ -365,7 +365,7 @@ export default function CreatePost() {
                               Drag and Drop or upload media
                             </p>
                             <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
-                              Max file size: 10MB
+                              Max file size: 100MB
                             </p>
                           </div>
                         </div>
