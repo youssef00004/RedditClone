@@ -13,8 +13,12 @@ export const useTheme = () => {
 export const ThemeProvider = ({ children }) => {
   // Initialize theme from localStorage or default to dark
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem("theme");
-    return savedTheme ? savedTheme === "dark" : true;
+    // Check if window is defined (client-side)
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("theme");
+      return savedTheme ? savedTheme === "dark" : true;
+    }
+    return true; // Default to dark mode during SSR/build
   });
 
   // Apply theme to document root
