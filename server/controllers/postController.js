@@ -7,7 +7,11 @@ import cloudinary from "../config/cloudinary.js";
 const uploadToCloudinary = (fileBuffer, folder = "reddit-posts") => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder: folder, resource_type: "auto" },
+      {
+        folder: folder,
+        resource_type: "auto",
+        timeout: 120000 // 2 minutes timeout for large files
+      },
       (error, result) => {
         if (error) reject(error);
         else resolve(result);
@@ -42,8 +46,8 @@ export const createPost = async (req, res) => {
       author: req.user.id,
     };
 
-    // Handle image upload
-    if (type === "image" && req.file) {
+    // Handle image/video upload
+    if ((type === "image" || type === "video") && req.file) {
       const result = await uploadToCloudinary(req.file.buffer);
       postData.image = result.secure_url;
     }

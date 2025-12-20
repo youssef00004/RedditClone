@@ -8,7 +8,7 @@ const api = axios.create({
     "ngrok-skip-browser-warning": "true", // Bypass ngrok warning page
   },
   withCredentials: true, // Enable sending cookies with requests (httpOnly cookies)
-  timeout: 30000, // 30 second timeout for all requests
+  timeout: 300000, // 5 minute timeout for all requests (needed for large file uploads)
 });
 
 // No need for Authorization header interceptor - httpOnly cookies are sent automatically
